@@ -2,90 +2,139 @@
 # pip freeze > requirements.txt
 # uvicorn main:app
 from fastapi import FastAPI,HTTPException
-from models import Usuario, Livro, Biblioteca, Emprestimo
+from models import Usuario,Livro,Biblioteca,Emprestimo
 from typing import List
+import datetime
 
 app = FastAPI()
 
-usuarios: List[Usuario] = []
-livros: List[Livro] = []
+
 bibliotecas: List[Biblioteca] = []
-emprestimos: List[Emprestimo] = []
 
-# APIs para usuario
-@app.get("/usuarios/", response_model=List[Usuario])
-def listar_usuarios():
-    return usuarios
-
-@app.post("/usuarios/", response_model=Usuario)
-def criar_usuario(usuario: Usuario):
-    usuarios.append(usuario)
-    return usuario
-
-@app.delete("/usuarios/{username}", response_model=Usuario)
-def excluir_usuario(username: str):
-    for index, usuario in enumerate(usuarios):
-        if usuario.username == username:
-            return usuarios.pop(index)
-    raise HTTPException(status_code=404, detail="Usuário não encontrado")
-
-# APIs para livros
-
-@app.get("/livros/", response_model=List[Livro])
-def listar_livros():
-    return livros
-
-@app.post("/livros/", response_model=Livro)
-def criar_livros(livro: Livro):
-    livros.append(livro)
-    return livro
-
-@app.delete("/livros/{titulo}", response_model=Livro)
-def excluir_livro(titulo: str):
-    for index, livro in enumerate(livros):
-        if livro.titulo == titulo:
-            return livros.pop(index)
-    raise HTTPException(status_code=404, detail="Livro não encontrado")
-
-# APIs para biblioteca
-
-@app.get("/bibliotecas/", response_model=List[Biblioteca])
+@app.get("/bibliotecas",response_model=List[Biblioteca])
 def listar_bibliotecas():
     return bibliotecas
 
+@app.get("/bibliotecas/{nome}",response_model=Biblioteca)
+def listar_biblioteca(nome_biblioteca:str):
+    for biblioteca in bibliotecas:
+        if biblioteca.nome ==nome_biblioteca:
+            return biblioteca
+    raise HTTPException(404,"Não localizado.")
 
-@app.post("/bibliotecas/", response_model=Biblioteca)
-def criar_biblioteca(biblioteca: Biblioteca):
+@app.post("/bibliotecas")
+def cadastrar_biblioteca(nome_biblioteca:str):
+    data = {
+        "nome":nome_biblioteca,
+        "acervo":[],
+        "usuarios":[],
+        "emprestimos":[]
+    }
+    biblioteca = Biblioteca(**data)
     bibliotecas.append(biblioteca)
-    return biblioteca
+    
+@app.delete("/bibliotecas/{nome}",response_model=Biblioteca)
+def listar_biblioteca(nome_biblioteca:str):
+    for id,biblioteca in enumerate(bibliotecas):
+        if biblioteca.nome == nome_biblioteca:
+            bibliotecas.pop(id)
+            return biblioteca
+    raise HTTPException(404,"Não localizado.")
 
-@app.delete("/bibliotecas/{nome}", response_model=Biblioteca)
-def excluir_biblioteca(nome: str):
-    for index, biblioteca in enumerate(bibliotecas):
-        if biblioteca.nome == nome:
-            return bibliotecas.pop(index)
-    raise HTTPException(status_code=404, detail="Biblioteca não encontrada")
+@app.get("/usuarios/",response_model=List[Usuario])
+def listar_usuarios(nome_usuario:str):
+    for biblioteca in bibliotecas:
+        if biblioteca.nome == nome_usuario:
+            return biblioteca.usuarios
+    raise HTTPException(404,"Não localizado.")
 
-# APIs para emprestimos
+@app.get("/usuarios/{username}", response_model=Usuario)
+def listar_usuario(nome_usuario:str, username:str):
+    for biblioteca in bibliotecas:
+        if biblioteca.nome == nome_usuario:
+            for usuario in biblioteca.usuarios:
+                if usuario.username == username:
+                    return usuario
+    raise HTTPException(404,"Usuário não localizado")
 
-@app.get("/emprestimos/", response_model=List[Emprestimo])
-def listar_emprestimos():
-    return emprestimos
+@app.post("/usuarios/")
+def criar_usuario(nome_usuario:str,usuario:Usuario):
+    for biblioteca in bibliotecas:
+        if biblioteca.nome == nome_usuario:
+            return biblioteca.usuarios.append(usuario)
+    raise HTTPException(404,"Não localizado.")
+   
+@app.delete("/usuarios/{username}",response_model=Usuario)
+def excluir_usuario(nome_usuario:str,username:str):
+    for biblioteca in bibliotecas:
+        if biblioteca.nome == nome_usuario:
+            for id,usuario in enumerate(biblioteca.usuarios):
+                if usuario.username == username:
+                    biblioteca.usuarios.pop(id)
+                    return usuario
+    raise HTTPException(404,"Usuário não localizado")
 
-@app.post("/emprestimos/", response_model=Emprestimo)
-def criar_emprestimos(emprestimo: Emprestimo):
-    emprestimos.append(emprestimo)
-    return emprestimo
+@app.get("/livros",response_model=List[Livro])
+def listar_livros(nome_livros:str):
+    for biblioteca in bibliotecas:
+        if biblioteca.nome == nome_livros:
+            return biblioteca.acervo
+    raise HTTPException(404,"não localizado")  
+ 
+@app.get("/livros/{titulo}",response_model=Livro)
+def listar_livros(nome_livros:str, titulo:str):
+    for biblioteca in bibliotecas:
+        if biblioteca.nome == nome_livros:
+            for livro in biblioteca.acervo:
+             if livro.titulo == titulo:
+                return livro
+    raise HTTPException(404,"Não localizado")
 
-@app.delete("/emprestimos/{usuario_username}/{livro_titulo}", response_model=Emprestimo)
-def excluir_emprestimo(usuario_username: str, livro_titulo: str):
-    for index, emprestimo in enumerate(emprestimos):
-        if emprestimo.usuario.username == usuario_username and emprestimo.livro.titulo == livro_titulo:
-            return emprestimos.pop(index)
-    raise HTTPException(status_code=404, detail="Empréstimo não encontrado")
+@app.delete("/livros/{titulo}",response_model=Livro)
+def deletar_livro(nome_livros:str,titulo:str):
+    for biblioteca in bibliotecas:
+        if biblioteca.nome == nome_livros:
+            for id, livro in enumerate(biblioteca.acervo):
+                if livro.titutlo == titulo:
+                    biblioteca.acervo.pop(id)
+                    return livro
+    raise HTTPException(404,"Não localizado")
 
-# Para depuração
-@app.get("/")
-def read_root():
-    return {"message": "API de Biblioteca funcionando!"}
+@app.post("/livros", response_model=Livro)
+def criar_livro(nome_livros:str,livro:Livro):
+    for biblioteca in bibliotecas:
+        if biblioteca.nome == nome_livros:
+            biblioteca.acervo.append(livro)
+            return livro
+    raise HTTPException(404,"Não localizado")
 
+@app.get("/emprestimos",response_model=List[Emprestimo])
+def listar_emprestimos(nome_emprestimo:str):
+    for biblioteca in bibliotecas:
+        if biblioteca.nome == nome_emprestimo:
+            return biblioteca.emprestimos
+    raise HTTPException(404,"Não localizado")
+
+@app.post("/emprestimos")
+def cadastrar_emprestimos(nome_emprestimo:str,usuario:str,titulo:str):
+    user = None
+    book = None
+    for biblioteca in bibliotecas:
+        if biblioteca.nome == nome_emprestimo:
+            for u in biblioteca.usuarios:
+                if u.username == usuario:
+                    user = u
+            for l in biblioteca.acervo:
+                if l.titulo == titulo:
+                    book = l
+            if user and book:
+                data = {
+                    "usuario":user,
+                    "livro":book,
+                    "data_emprestimo":datetime.datetime.now().date(),
+                    "data_devolucao":datetime.date(2025,5,31),
+                }
+                emprestimo = Emprestimo(**data)
+                biblioteca.emprestimos.append(emprestimo)
+    if not user or not book:
+        raise HTTPException(404,"Não localizado")
