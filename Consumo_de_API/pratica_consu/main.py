@@ -6,7 +6,8 @@ def menu():
     print("2 - Pesquisar livro por título")
     print("3 - Cadastrar um livro")
     print("4 - Deletar um livro")
-    print("5 - Sair")
+    print("5 - Editar um livro")
+    print("6 - Sair")
     return input("Escolha uma opção: ")
 
 if __name__ == "__main__":
@@ -58,8 +59,27 @@ if __name__ == "__main__":
                 print(r.json())
             else:
                 print("livro não encontrado para deletar!")
-
+        
         elif opcao == "5":
+        # Editar um livro
+            titulo_atual = input("Digite o título do livro que deseja editar: ")
+            novo_titulo = input("Digite o novo título: ")
+            novo_ano = int(input("Digite o novo ano: "))
+            nova_edicao = int(input("Digite a nova edição: "))
+            
+            novos_dados = {
+                "titulo": novo_titulo,
+                "ano": novo_ano,
+                "edicao": nova_edicao
+            }
+            r = requests.put(f"{url}/livros/{titulo_atual}", json=novos_dados)
+
+            if r.status_code == 200:
+                print("Livro editado com sucesso!")
+                print(r.json())
+        
+
+        elif opcao == "6":
             # Sair
             print("sair")
             break

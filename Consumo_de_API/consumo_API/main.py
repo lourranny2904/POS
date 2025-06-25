@@ -28,3 +28,14 @@ def criar_livro(livro:Livro):
     livros.append(livro)
     return livro
     raise HTTPException(404,"Não localizado")
+
+@app.put("/livros/{titulo}", response_model=Livro)
+def editar_livro(titulo:str, livro_editado:Livro):
+    for index, livro in enumerate(livros):
+        if livro.titulo == titulo:
+            livros[index] = livro_editado
+            return livro_editado
+    raise HTTPException(status_code=404, detail="livro não encontrado")
+
+
+
